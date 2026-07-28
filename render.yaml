@@ -1,21 +1,33 @@
 services:
   - type: web
-    name: currency-converter-bot
+    name: currency-telegram-bot
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
       - key: BOT_TOKEN
         sync: false
-      - key: EXCHANGE_API_KEY
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bot-redis
+          property: connectionString
+
+  - type: worker
+    name: currency-bot-worker
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A tasks worker --loglevel=info
+    envVars:
+      - key: BOT_TOKEN
         sync: false
-      - key: BOT_USERNAME
-        value: CurrencyConvertesbot
-      - key: DATABASE_URL
-        value: sqlite+aiosqlite:///./data/bot.db
-      - key: DEFAULT_BASE
-        value: USD
-      - key: REQUEST_TIMEOUT
-        value: "20"
-      - key: LOG_LEVEL
-        value: INFO
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bot-redis
+          property: connectionString
+
+  - type: redis
+    name: bot-redis
+    plan: free
+    ipAllowList: []
