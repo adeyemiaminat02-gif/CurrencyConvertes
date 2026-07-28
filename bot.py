@@ -1,38 +1,31 @@
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import Update
 import asyncio
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from config import Config, logger
-from database import init_db
 
-# Handlers
-from handlers.start import start_handler
-from handlers.help import help_handler
-from handlers.about import about_handler
-from handlers.currencies import currencies_handler
-from handlers.history import history_handler
-from handlers.rates import rate_handler
-from handlers.converter import text_conversion_handler, callback_query_handler
+async def background_heavy_task(context: ContextTypes.DEFAULT_TYPE):
+    """This runs in the background non-blockingly."""
+    job_data = context.job.data
+    chat_id = job_data["chat_id"]
+    amount = job_data["amount"]
 
-async def main():
-    logger.info("Initializing Database...")
-    await init_db()
+    # Simulate heavy processing or API calls
+    await asyncio.sleep(5)
 
-    logger.info("Building Telegram Application...")
-    app = ApplicationBuilder().token(Config.BOT_TOKEN).build()
+    # Push result back to user
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=f"✅ Your background calculation for {amount} USD is complete!"
+    )
 
-    # Commands
-    app.add_handler(CommandHandler("start", start_handler))
-    app.add_handler(CommandHandler("help", help_handler))
-    app.add_handler(CommandHandler("about", about_handler))
-    app.add_handler(CommandHandler("currencies", currencies_handler))
-    app.add_handler(CommandHandler("history", history_handler))
-    app.add_handler(CommandHandler("rate", rate_handler))
+async def convert_background_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Triggered by user command, delegates to background job."""
+    chat_id = update.effective_chat.id
 
-    # Text & Callbacks
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_conversion_handler))
-    app.add_handler(CallbackQueryHandler(callback_query_handler))
+    # Queue job to run once after 1 second delay
+    context.job_queue.run_once(
+        background_heavy_task,
+        when=1,
+        data={"chat_id": chat_id, "amount": 100}
+    )
 
-    logger.info("Bot started successfully. Running polling...")
-    await app.run_polling()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    await update.message.reply_text("⏳ Your request has been queued! We will notify you shortly.")
