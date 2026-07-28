@@ -1,10 +1,18 @@
-python-telegram-bot[job-queue]>=22.0a1
-httpx>=0.27.0
+# --- Core Bot Framework ---
+python-telegram-bot[job-queue]>=21.0,<23.0
+
+# --- Asynchronous HTTP & Network ---
+httpx>=0.27.0,<0.29.0
+
+# --- Environment & Configuration ---
 python-dotenv>=1.0.1
+pydantic>=2.7.0
+pydantic-settings>=2.2.1
+
+# --- Database & Storage (Optional / Standard Setup) ---
 SQLAlchemy>=2.0.30
 aiosqlite>=0.20.0
-cachetools>=5.3.3
-Babel>=2.15.0
-pydantic-settings>=2.2.1
-celery>=5.3.6
+
+# --- Task Queue & Caching (Optional) ---
 redis>=5.0.0
+cachetools>=5.3.3
